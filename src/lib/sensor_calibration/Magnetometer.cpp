@@ -66,16 +66,16 @@ void Magnetometer::set_external(bool external)
 {
 	// update priority default appropriately if not set
 	if (_calibration_index < 0) {
-		if (_priority == 0) {
+		if ((_priority < 0) || (_priority > 100)) {
 			_priority = external ? DEFAULT_EXTERNAL_PRIORITY : DEFAULT_PRIORITY;
 
-		} else if (!_external && external && (_priority == DEFAULT_EXTERNAL_PRIORITY)) {
+		} else if (!_external && external && (_priority == DEFAULT_PRIORITY)) {
 			// internal -> external
-			_priority = DEFAULT_PRIORITY;
-
-		} else if (_external && !external && (_priority == DEFAULT_PRIORITY)) {
-			// external -> internal
 			_priority = DEFAULT_EXTERNAL_PRIORITY;
+
+		} else if (_external && !external && (_priority == DEFAULT_EXTERNAL_PRIORITY)) {
+			// external -> internal
+			_priority = DEFAULT_PRIORITY;
 		}
 	}
 
@@ -131,7 +131,7 @@ void Magnetometer::ParametersUpdate()
 		// CAL_MAGx_PRIO
 		_priority = GetCalibrationParam(SensorString(), "PRIO", _calibration_index);
 
-		if (_priority < 0 || _priority > 100) {
+		if ((_priority < 0) || (_priority > 100)) {
 			// reset to default
 			int32_t new_priority = _external ? DEFAULT_EXTERNAL_PRIORITY : DEFAULT_PRIORITY;
 			PX4_ERR("%s %d invalid priority %d, resetting to %d", SensorString(), _calibration_index, _priority, new_priority);
@@ -143,10 +143,10 @@ void Magnetometer::ParametersUpdate()
 		_offset = GetCalibrationParamsVector3f(SensorString(), "OFF", _calibration_index);
 
 		// CAL_MAGx_SCALE{X,Y,Z}
-		Vector3f diag = GetCalibrationParamsVector3f(SensorString(), "SCALE", _calibration_index);
+		const Vector3f diag = GetCalibrationParamsVector3f(SensorString(), "SCALE", _calibration_index);
 
 		// CAL_MAGx_ODIAG{X,Y,Z}
-		Vector3f offdiag = GetCalibrationParamsVector3f(SensorString(), "ODIAG", _calibration_index);
+		const Vector3f offdiag = GetCalibrationParamsVector3f(SensorString(), "ODIAG", _calibration_index);
 
 		float scale[9] {
 			diag(0),    offdiag(0), offdiag(1),

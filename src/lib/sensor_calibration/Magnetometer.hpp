@@ -102,7 +102,7 @@ private:
 
 	int8_t _calibration_index{-1};
 	uint32_t _device_id{0};
-	int32_t _priority{0};
+	int32_t _priority{-1};
 
 	bool _external{false};
 };
