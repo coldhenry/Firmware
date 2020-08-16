@@ -273,39 +273,6 @@ static bool mat_inverse(float *A, float *inv, uint8_t n)
 	return ret;
 }
 
-int ellipsoid_fit_least_squares(const float x[], const float y[], const float z[],
-				unsigned int size, int max_iterations, float *offset_x, float *offset_y, float *offset_z,
-				float *sphere_radius, float *diag_x, float *diag_y, float *diag_z,
-				float *offdiag_x, float *offdiag_y, float *offdiag_z, bool sphere_fit_only)
-{
-
-	for (int i = 0; i < max_iterations; i++) {
-		float fitness = 1.0e30f;
-		float sphere_lambda = 1.0f;
-
-		run_lm_sphere_fit(x, y, z, fitness, sphere_lambda,
-				  size, offset_x, offset_y, offset_z,
-				  sphere_radius, diag_x, diag_y, diag_z, offdiag_x, offdiag_y, offdiag_z);
-
-		PX4_DEBUG("sphere fitness (%d/%d): %.4f", i, max_iterations, (double)fitness);
-	}
-
-	if (!sphere_fit_only) {
-		float fitness = 1.0e30f;
-		float ellipsoid_lambda = 1.0f;
-
-		for (int i = 0; i < max_iterations; i++) {
-			run_lm_ellipsoid_fit(x, y, z, fitness, ellipsoid_lambda,
-					     size, offset_x, offset_y, offset_z,
-					     sphere_radius, diag_x, diag_y, diag_z, offdiag_x, offdiag_y, offdiag_z);
-
-			PX4_DEBUG("ellipsoid fitness (%d/%d): %.4f", i, max_iterations, (double)fitness);
-		}
-	}
-
-	return 0;
-}
-
 int run_lm_sphere_fit(const float x[], const float y[], const float z[], float &_fitness, float &_sphere_lambda,
 		      unsigned int samples_collected, float *offset_x, float *offset_y, float *offset_z,
 		      float *sphere_radius, float *diag_x, float *diag_y, float *diag_z, float *offdiag_x, float *offdiag_y, float *offdiag_z)

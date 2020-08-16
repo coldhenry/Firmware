@@ -514,13 +514,45 @@ calibrate_return mag_calibrate_all(orb_advert_t *mavlink_log_pub, int32_t cal_ma
 				// enough to reliably estimate both scales and offsets with 2 sides only (even if the existing calibration
 				// is already close)
 				bool sphere_fit_only = worker_data.calibration_sides <= 2;
-				ellipsoid_fit_least_squares(worker_data.x[cur_mag], worker_data.y[cur_mag], worker_data.z[cur_mag],
-							    worker_data.calibration_counter_total[cur_mag], 100,
-							    &sphere[cur_mag](0), &sphere[cur_mag](1), &sphere[cur_mag](2),
-							    &sphere_radius[cur_mag],
-							    &diag[cur_mag](0), &diag[cur_mag](1), &diag[cur_mag](2),
-							    &offdiag[cur_mag](0), &offdiag[cur_mag](1), &offdiag[cur_mag](2),
-							    sphere_fit_only);
+				{
+					float fitness = 1.0e30f;
+					float sphere_lambda = 1.0f;
+					static constexpr int max_iterations = 100;
+
+					for (int i = 0; i < max_iterations; i++) {
+						int ret = run_lm_sphere_fit(worker_data.x[cur_mag], worker_data.y[cur_mag], worker_data.z[cur_mag],
+									    fitness, sphere_lambda, worker_data.calibration_counter_total[cur_mag],
+									    &sphere[cur_mag](0), &sphere[cur_mag](1), &sphere[cur_mag](2),
+									    &sphere_radius[cur_mag],
+									    &diag[cur_mag](0), &diag[cur_mag](1), &diag[cur_mag](2),
+									    &offdiag[cur_mag](0), &offdiag[cur_mag](1), &offdiag[cur_mag](2));
+
+						PX4_INFO("Mag: %d (%d/%d) sphere fit ret=%d, fitness: %.4f, lambda: %.4f", cur_mag, i, max_iterations, ret,
+							 (double)fitness, (double)sphere_lambda);
+					}
+
+					PX4_INFO("Mag: %d sphere fitness: %.4f radius: %.4f", cur_mag, (double)fitness, (double)sphere_radius[cur_mag]);
+				}
+
+				if (!sphere_fit_only) {
+					float fitness = 1.0e30f;
+					float ellipsoid_lambda = 1.0f;
+					static constexpr int max_iterations = 100;
+
+					for (int i = 0; i < max_iterations; i++) {
+						int ret = run_lm_ellipsoid_fit(worker_data.x[cur_mag], worker_data.y[cur_mag], worker_data.z[cur_mag],
+									       fitness, ellipsoid_lambda, worker_data.calibration_counter_total[cur_mag],
+									       &sphere[cur_mag](0), &sphere[cur_mag](1), &sphere[cur_mag](2),
+									       &sphere_radius[cur_mag],
+									       &diag[cur_mag](0), &diag[cur_mag](1), &diag[cur_mag](2),
+									       &offdiag[cur_mag](0), &offdiag[cur_mag](1), &offdiag[cur_mag](2));
+
+						PX4_INFO("Mag: %d (%d/%d) ellipsoid fit ret=%d, fitness: %.4f, lambda: %.4f", cur_mag, i, max_iterations, ret,
+							 (double)fitness, (double)ellipsoid_lambda);
+					}
+
+					PX4_INFO("Mag: %d ellipsoid fitness: %.4f", cur_mag, (double)fitness);
+				}
 
 				result = check_calibration_result(sphere[cur_mag](0), sphere[cur_mag](1), sphere[cur_mag](2),
 								  sphere_radius[cur_mag],
